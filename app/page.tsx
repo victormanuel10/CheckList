@@ -1,7 +1,8 @@
 "use client";
 
-import type { ChangeEvent, CSSProperties, FormEvent } from "react";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import Link from "next/link";
 import {
   CHECKLIST_FIELDS,
   DELIVERY_VALUES,
@@ -1213,6 +1214,15 @@ export default function Home() {
             <h1>Checklist de Entregables</h1>
           </div>
         </div>
+
+        <nav style={{ display: "flex", gap: "8px" }}>
+          <Link href="/" className="btn-icon btn-primary">
+            📋 Checklist General
+          </Link>
+          <Link href="/validar-hito6" className="btn-icon">
+            📑 Validación Anexos HITO 6
+          </Link>
+        </nav>
         <div className="topbar-actions">
           <span className={`sync-pill ${storageMode}`}>
             <span className="sync-dot" />
