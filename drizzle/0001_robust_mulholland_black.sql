@@ -1,0 +1,1 @@
+ALTER TABLE `checklist_records` ADD `delivery_status` text DEFAULT 'Sin registrar' NOT NULL;
