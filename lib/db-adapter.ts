@@ -1,12 +1,14 @@
-import Database from "better-sqlite3";
 import path from "node:path";
 import fs from "node:fs";
+import { createRequire } from "node:module";
 
 let dbInstance: any = null;
 
 export function getNativeDb() {
   if (dbInstance) return dbInstance;
 
+  const require = createRequire(import.meta.url);
+  const Database = require("better-sqlite3");
   const dbDir = path.join(process.cwd(), "db");
   if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });

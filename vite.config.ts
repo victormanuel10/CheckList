@@ -47,6 +47,14 @@ export default defineConfig(async () => {
     server: isCodexSeatbeltSandbox
       ? { watch: { useFsEvents: false, usePolling: true } }
       : undefined,
+    ssr: {
+      external: ["better-sqlite3"],
+    },
+    build: {
+      rollupOptions: {
+        external: ["better-sqlite3"],
+      },
+    },
     plugins: [
       vinext(),
       sites(),
