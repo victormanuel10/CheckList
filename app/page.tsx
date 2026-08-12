@@ -1606,93 +1606,95 @@ export default function Home() {
                   <span className="detail-id-tag">ID: {selectedRecord.id}</span>
                   <h2>{selectedRecord.municipio}</h2>
                   <span className="detail-operator-tag">Oferente: {selectedRecord.oferente}</span>
-                  <div className="delivery-select-box">
-                    <span>Entrega de info:</span>
-                    <select
-                      className={
-                        DELIVERY_META[selectedRecord.deliveryStatus].className
-                      }
-                      value={selectedRecord.deliveryStatus}
-                      onChange={(event) => {
-                        if (isDeliveryStatus(event.target.value)) {
-                          changeDeliveryStatus(
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "12px", alignItems: "center" }}>
+                    <div className="delivery-select-box" style={{ marginTop: 0 }}>
+                      <span>Entrega de info:</span>
+                      <select
+                        className={
+                          DELIVERY_META[selectedRecord.deliveryStatus].className
+                        }
+                        value={selectedRecord.deliveryStatus}
+                        onChange={(event) => {
+                          if (isDeliveryStatus(event.target.value)) {
+                            changeDeliveryStatus(
+                              selectedRecord,
+                              event.target.value,
+                            );
+                          }
+                        }}
+                      >
+                        {DELIVERY_VALUES.map((value) => (
+                          <option value={value} key={value}>
+                            {DELIVERY_META[value].label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="delivery-select-box" style={{ marginTop: 0 }}>
+                      <span>Peso carpetas (GB):</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="Ej. 15.5"
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: "0.85rem",
+                          background: "#fff",
+                          width: "100px",
+                        }}
+                        value={selectedRecord.deliverySizeGb || ""}
+                        onChange={(event) =>
+                          changeDeliverySizeGb(
                             selectedRecord,
                             event.target.value,
-                          );
+                          )
                         }
-                      }}
-                    >
-                      {DELIVERY_VALUES.map((value) => (
-                        <option value={value} key={value}>
-                          {DELIVERY_META[value].label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="delivery-select-box">
-                    <span>Peso carpetas (GB):</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="Ej. 15.5"
-                      style={{
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        border: "1px solid #cbd5e1",
-                        fontSize: "0.85rem",
-                        background: "#fff",
-                        width: "100px",
-                      }}
-                      value={selectedRecord.deliverySizeGb || ""}
-                      onChange={(event) =>
-                        changeDeliverySizeGb(
-                          selectedRecord,
-                          event.target.value,
-                        )
-                      }
-                    />
-                  </div>
-                  <div className="delivery-select-box">
-                    <span>Fecha Entrega Inicial:</span>
-                    <input
-                      type="date"
-                      style={{
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        border: "1px solid #cbd5e1",
-                        fontSize: "0.85rem",
-                        background: "#fff",
-                      }}
-                      value={selectedRecord.initialDeliveryDate || ""}
-                      onChange={(event) =>
-                        changeInitialDeliveryDate(
-                          selectedRecord,
-                          event.target.value,
-                        )
-                      }
-                    />
-                  </div>
-                  <div className="delivery-select-box">
-                    <span>Fecha Entrega con Correcciones:</span>
-                    <input
-                      type="date"
-                      style={{
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        border: "1px solid #cbd5e1",
-                        fontSize: "0.85rem",
-                        background: "#fff",
-                      }}
-                      value={selectedRecord.correctionDeliveryDate || ""}
-                      placeholder="Vacío"
-                      onChange={(event) =>
-                        changeCorrectionDeliveryDate(
-                          selectedRecord,
-                          event.target.value,
-                        )
-                      }
-                    />
+                      />
+                    </div>
+                    <div className="delivery-select-box" style={{ marginTop: 0 }}>
+                      <span>Fecha Entrega Inicial:</span>
+                      <input
+                        type="date"
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: "0.85rem",
+                          background: "#fff",
+                        }}
+                        value={selectedRecord.initialDeliveryDate || ""}
+                        onChange={(event) =>
+                          changeInitialDeliveryDate(
+                            selectedRecord,
+                            event.target.value,
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="delivery-select-box" style={{ marginTop: 0 }}>
+                      <span>Fecha Entrega con Correcciones:</span>
+                      <input
+                        type="date"
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: "0.85rem",
+                          background: "#fff",
+                        }}
+                        value={selectedRecord.correctionDeliveryDate || ""}
+                        placeholder="Vacío"
+                        onChange={(event) =>
+                          changeCorrectionDeliveryDate(
+                            selectedRecord,
+                            event.target.value,
+                          )
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="detail-score-box">
