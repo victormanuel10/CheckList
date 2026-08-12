@@ -956,7 +956,7 @@ export default function Home() {
   function handleImageUpload(
     record: ChecklistRecord,
     fieldId: string,
-    file: File,
+    file: Blob | File,
   ) {
     if (!file || !file.type.startsWith("image/")) return;
     const reader = new FileReader();
@@ -972,9 +972,52 @@ export default function Home() {
           fieldEvidence: updatedEvidence,
           updatedAt: new Date().toISOString(),
         });
+        setMessage("Foto guardada correctamente");
+        setTimeout(() => setMessage(""), 3000);
       }
     };
     reader.readAsDataURL(file);
+  }
+
+  async function handlePasteClipboardImage(
+    record: ChecklistRecord,
+    fieldId: string,
+  ) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.read) {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          const imageType = item.types.find((t) => t.startsWith("image/"));
+          if (imageType) {
+            const blob = await item.getType(imageType);
+            handleImageUpload(record, fieldId, blob);
+            return;
+          }
+        }
+      }
+      alert("Copia una imagen al portapapeles (Ej. captura de pantalla o copiar imagen) y presiona Ctrl + V sobre el elemento.");
+    } catch {
+      alert("Presiona Ctrl + V sobre la casilla del elemento para pegar la imagen de tu portapapeles.");
+    }
+  }
+
+  function handleRowPaste(
+    record: ChecklistRecord,
+    fieldId: string,
+    e: React.ClipboardEvent,
+  ) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith("image/")) {
+        const blob = items[i].getAsFile();
+        if (blob) {
+          e.preventDefault();
+          handleImageUpload(record, fieldId, blob);
+          return;
+        }
+      }
+    }
   }
 
   function removeFieldEvidence(record: ChecklistRecord, fieldId: string) {
@@ -1786,7 +1829,12 @@ export default function Home() {
                                           {field.section}
                                         </div>
                                       ) : null}
-                                      <div className="check-row">
+                                      <div
+                                        className="check-row"
+                                        tabIndex={0}
+                                        onPaste={(e) => handleRowPaste(selectedRecord, field.id, e)}
+                                        title="Haz clic aquí y presiona Ctrl + V para pegar una foto"
+                                      >
                                         <div className="check-row-header">
                                           <span className="check-row-label">{field.label}</span>
                                           <div className="item-action-btns">
@@ -1795,44 +1843,58 @@ export default function Home() {
                                               className={`btn-item-action ${
                                                 hasObs ? "active-obs" : ""
                                               }`}
-                                            title="Agregar Observacion"
-                                            onClick={() =>
-                                              setOpenObsFieldId(
-                                                isObsOpen ? null : field.id,
-                                              )
-                                            }
-                                          >
-                                            <IconMessageSquare />
-                                            <span>Nota{hasObs ? " •" : ""}</span>
-                                          </button>
+                                              title="Agregar Observacion"
+                                              onClick={() =>
+                                                setOpenObsFieldId(
+                                                  isObsOpen ? null : field.id,
+                                                )
+                                              }
+                                            >
+                                              <IconMessageSquare />
+                                              <span>Nota{hasObs ? " •" : ""}</span>
+                                            </button>
 
-                                          <label
-                                            className={`btn-item-action ${
-                                              evidenceUrl ? "active-evidence" : ""
-                                            }`}
-                                            title="Subir evidencia en imagen"
-                                          >
-                                            <IconCamera />
-                                            <span>{evidenceUrl ? "Foto •" : "Foto"}</span>
-                                            <input
-                                              type="file"
-                                              accept="image/*"
-                                              className="hidden-input"
-                                              onChange={(e) => {
-                                                const file = e.target.files?.[0];
-                                                if (file) {
-                                                  handleImageUpload(
-                                                    selectedRecord,
-                                                    field.id,
-                                                    file,
-                                                  );
-                                                  e.target.value = "";
-                                                }
-                                              }}
-                                            />
-                                          </label>
+                                            <label
+                                              className={`btn-item-action ${
+                                                evidenceUrl ? "active-evidence" : ""
+                                              }`}
+                                              title="Subir archivo de foto"
+                                            >
+                                              <IconCamera />
+                                              <span>{evidenceUrl ? "Foto •" : "Subir Foto"}</span>
+                                              <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden-input"
+                                                onChange={(e) => {
+                                                  const file = e.target.files?.[0];
+                                                  if (file) {
+                                                    handleImageUpload(
+                                                      selectedRecord,
+                                                      field.id,
+                                                      file,
+                                                    );
+                                                    e.target.value = "";
+                                                  }
+                                                }}
+                                              />
+                                            </label>
+
+                                            <button
+                                              type="button"
+                                              className="btn-item-action"
+                                              title="Pegar foto del portapapeles (o presiona Ctrl + V)"
+                                              onClick={() =>
+                                                handlePasteClipboardImage(
+                                                  selectedRecord,
+                                                  field.id,
+                                                )
+                                              }
+                                            >
+                                              📋 <span>Pegar</span>
+                                            </button>
+                                          </div>
                                         </div>
-                                      </div>
 
                                       <div
                                         className="status-options"
