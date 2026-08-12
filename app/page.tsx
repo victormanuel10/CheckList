@@ -300,6 +300,57 @@ function excelRow(values: unknown[], styleId = "") {
   return `<Row>${values.map((value) => excelCell(value, styleId)).join("")}</Row>`;
 }
 
+async function exportDocx() {
+  if (!selectedRecord) {
+    alert("Por favor selecciona un municipio.");
+    return;
+  }
+  setMessage("Generando Word...");
+  try {
+    const stateObj: Record<string, any> = {};
+    CHECKLIST_FIELDS.forEach((field) => {
+      const key = `${field.group}::${field.label}`;
+      const isDone = selectedRecord.checks[field.id] === "Cumple";
+      stateObj[key] = {
+        checked: isDone,
+        notes: selectedRecord.fieldObservations?.[field.id] || "",
+      };
+    });
+
+    const res = await fetch("/api/validar-hito6/export-docx", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        projectInfo: {
+          municipio: selectedRecord.municipio,
+          operador: selectedRecord.oferente,
+          contrato: "151 DE 2024",
+          fecha: selectedRecord.updatedAt
+            ? new Date(selectedRecord.updatedAt).toISOString().split("T")[0]
+            : new Date().toISOString().split("T")[0],
+        },
+        checklistState: stateObj,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error("No se pudo generar el documento.");
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `OFCANT-CATS_${selectedRecord.municipio.toUpperCase()}_CONCEPTO_HITO_06.docx`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setMessage("¡Word descargado!");
+    setTimeout(() => setMessage(""), 3000);
+  } catch {
+    setMessage("Error al generar Word");
+  }
+}
+
 function buildCsv(records: ChecklistRecord[]) {
   const header = [
     "ID",
@@ -1272,6 +1323,9 @@ export default function Home() {
             {storageMode === "cloud" ? "Base del sitio" : "Modo local"}
           </span>
           {message ? <span className="save-message">{message}</span> : null}
+          <button type="button" className="btn-icon btn-primary" onClick={exportDocx}>
+            📄 Oficio Word (.docx)
+          </button>
           <button type="button" className="btn-icon btn-primary" onClick={exportExcel}>
             <IconExcel /> Reporte Excel
           </button>
