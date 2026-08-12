@@ -956,15 +956,50 @@ export default function Home() {
     });
   }
 
-  function handleImageUpload(
+  function compressImage(file: Blob | File, maxWidth = 1200, quality = 0.75): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rawUrl = e.target?.result as string;
+        if (!rawUrl) return resolve("");
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(rawUrl);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.onerror = () => resolve(rawUrl);
+        img.src = rawUrl;
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleImageUpload(
     record: ChecklistRecord,
     fieldId: string,
     file: Blob | File,
   ) {
     if (!file || !file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
+    setMessage("Procesando imagen...");
+    try {
+      const dataUrl = await compressImage(file);
       if (dataUrl) {
         const updatedEvidence = {
           ...(record.fieldEvidence ?? {}),
@@ -978,8 +1013,9 @@ export default function Home() {
         setMessage("Foto guardada correctamente");
         setTimeout(() => setMessage(""), 3000);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      setMessage("Error al procesar imagen");
+    }
   }
 
   async function handlePasteClipboardImage(
@@ -1628,7 +1664,13 @@ export default function Home() {
                           const isObsOpen = openObsFieldId === field.id;
 
                           return (
-                            <div className="check-row" key={field.id}>
+                            <div
+                              className="check-row"
+                              key={field.id}
+                              tabIndex={0}
+                              onPaste={(e) => handleRowPaste(selectedRecord, field.id, e)}
+                              title="Haz clic aquí y presiona Ctrl + V para pegar una foto"
+                            >
                               <div className="check-row-header">
                                 <span className="check-row-label">
                                   {field.label}
@@ -1677,6 +1719,20 @@ export default function Home() {
                                       }}
                                     />
                                   </label>
+
+                                  <button
+                                    type="button"
+                                    className="btn-item-action"
+                                    title="Pegar foto del portapapeles (o presiona Ctrl + V)"
+                                    onClick={() =>
+                                      handlePasteClipboardImage(
+                                        selectedRecord,
+                                        field.id,
+                                      )
+                                    }
+                                  >
+                                    📋 Pegar
+                                  </button>
                                 </div>
                               </div>
 
