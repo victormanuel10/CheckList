@@ -309,7 +309,7 @@ function buildCsv(records: ChecklistRecord[]) {
     "Oferente",
     "Municipio",
     "Entrega de informacion",
-    "Tamaño (GB)",
+    "Peso carpetas",
     "Fecha de Entrega Inicial",
     "Fecha de Entrega con Correcciones",
     ...CHECKLIST_FIELDS.map(fieldReportLabel),
@@ -538,7 +538,7 @@ function buildExcelReport(records: ChecklistRecord[]) {
     "Oferente",
     "Municipio",
     "Entrega de informacion",
-    "Tamaño (GB)",
+    "Peso carpetas",
     "Fecha de Entrega Inicial",
     "Fecha de Entrega con Correcciones",
     "Porcentaje cumplimiento",
@@ -1630,7 +1630,7 @@ export default function Home() {
                     </select>
                   </div>
                   <div className="delivery-select-box">
-                    <span>Tamaño (GB):</span>
+                    <span>Peso carpetas (GB):</span>
                     <input
                       type="number"
                       step="0.01"
