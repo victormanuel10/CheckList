@@ -245,9 +245,6 @@ export default function ValidarHito6Page() {
           <button onClick={handleSave} className="btn-icon btn-primary">
             💾 Guardar Estado
           </button>
-          <button onClick={handleDownloadDocx} className="btn-icon btn-primary">
-            📄 Oficio Word (.docx)
-          </button>
           <button onClick={handleOpenConcept} className="btn-icon">
             📝 Generar Concepto
           </button>

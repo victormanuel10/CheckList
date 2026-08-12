@@ -301,46 +301,7 @@ function excelRow(values: unknown[], styleId = "") {
   return `<Row>${values.map((value) => excelCell(value, styleId)).join("")}</Row>`;
 }
 
-async function exportDocx() {
-  if (!selectedRecord) {
-    alert("Por favor selecciona un municipio.");
-    return;
-  }
-  setMessage("Generando Word...");
-  try {
-    const stateObj: Record<string, any> = {};
-    CHECKLIST_FIELDS.forEach((field) => {
-      const key = `${field.group}::${field.label}`;
-      const isDone = selectedRecord.checks[field.id] === "Cumple";
-      stateObj[key] = {
-        checked: isDone,
-        notes: selectedRecord.fieldObservations?.[field.id] || "",
-      };
-    });
 
-    const projectInfo = {
-      municipio: selectedRecord.municipio,
-      operador: selectedRecord.oferente,
-      contrato: "151 DE 2024",
-      fecha: selectedRecord.updatedAt
-        ? new Date(selectedRecord.updatedAt).toISOString().split("T")[0]
-        : new Date().toISOString().split("T")[0],
-    };
-
-    const blob = await generateOficioDocxBlob(projectInfo, stateObj);
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `OFCANT-CATS_${selectedRecord.municipio.toUpperCase()}_CONCEPTO_HITO_06.docx`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    setMessage("¡Word descargado!");
-    setTimeout(() => setMessage(""), 3000);
-  } catch (err) {
-    console.error("Error al generar Word:", err);
-    setMessage("Error al generar Word");
-  }
-}
 
 function buildCsv(records: ChecklistRecord[]) {
   const header = [
@@ -1238,6 +1199,47 @@ export default function Home() {
       buildExcelReport(records),
       "application/vnd.ms-excel;charset=utf-8",
     );
+  }
+
+  async function exportDocx() {
+    if (!selectedRecord) {
+      alert("Por favor selecciona un municipio.");
+      return;
+    }
+    setMessage("Generando Word...");
+    try {
+      const stateObj: Record<string, any> = {};
+      CHECKLIST_FIELDS.forEach((field) => {
+        const key = `${field.group}::${field.label}`;
+        const isDone = selectedRecord.checks[field.id] === "Cumple";
+        stateObj[key] = {
+          checked: isDone,
+          notes: selectedRecord.fieldObservations?.[field.id] || "",
+        };
+      });
+
+      const projectInfo = {
+        municipio: selectedRecord.municipio,
+        operador: selectedRecord.oferente,
+        contrato: "151 DE 2024",
+        fecha: selectedRecord.updatedAt
+          ? new Date(selectedRecord.updatedAt).toISOString().split("T")[0]
+          : new Date().toISOString().split("T")[0],
+      };
+
+      const blob = await generateOficioDocxBlob(projectInfo, stateObj);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `OFCANT-CATS_${selectedRecord.municipio.toUpperCase().replace(/[^A-Z0-9]/g, "_")}_CONCEPTO_HITO_06.docx`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setMessage("¡Word descargado!");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      console.error("Error al generar Word:", err);
+      setMessage("Error al generar Word");
+    }
   }
 
   if (authState !== "authenticated") {
