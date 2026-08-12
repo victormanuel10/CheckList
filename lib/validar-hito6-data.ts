@@ -11,6 +11,8 @@ export type ProjectInfo = {
   operador: string;
   contrato: string;
   fecha: string;
+  fechaEntregaInicial?: string;
+  fechaEntregaCorrecciones?: string;
 };
 
 export type ValidationSectionItem = {
@@ -431,6 +433,9 @@ export function generateValidationExcelXml(
    <Column ss:Width="300"/>
    <Column ss:Width="250"/>
    <Column ss:Width="100"/>
+   ${excelRow(["Fecha de Entrega Inicial", projectInfo.fechaEntregaInicial || ""], "CellData")}
+   ${excelRow(["Fecha de Entrega con Correcciones", projectInfo.fechaEntregaCorrecciones || ""], "CellData")}
+   ${excelRow([], "CellData")}
    ${excelRow(["Sección", "Subsección", "Item", "Subitem", "Cumplido"], "Header")}
    ${detailRowsXml.join("\n")}
   </Table>

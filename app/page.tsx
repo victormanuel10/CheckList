@@ -309,6 +309,8 @@ function buildCsv(records: ChecklistRecord[]) {
     "Oferente",
     "Municipio",
     "Entrega de informacion",
+    "Fecha de Entrega Inicial",
+    "Fecha de Entrega con Correcciones",
     ...CHECKLIST_FIELDS.map(fieldReportLabel),
     "Observaciones",
     "Porcentaje cumplimiento",
@@ -323,6 +325,8 @@ function buildCsv(records: ChecklistRecord[]) {
       record.oferente,
       record.municipio,
       record.deliveryStatus,
+      record.initialDeliveryDate ?? "",
+      record.correctionDeliveryDate ?? "",
       ...CHECKLIST_FIELDS.map(
         (field) => record.checks[field.id] ?? "Pendiente",
       ),
@@ -532,6 +536,8 @@ function buildExcelReport(records: ChecklistRecord[]) {
     "Oferente",
     "Municipio",
     "Entrega de informacion",
+    "Fecha de Entrega Inicial",
+    "Fecha de Entrega con Correcciones",
     "Porcentaje cumplimiento",
     "Estado general",
     ...CHECKLIST_FIELDS.map(fieldReportLabel),
@@ -549,6 +555,8 @@ function buildExcelReport(records: ChecklistRecord[]) {
     ${excelCell(record.oferente, "CellData")}
     ${excelCell(record.municipio, "CellData")}
     ${excelCell(record.deliveryStatus, "CellData")}
+    ${excelCell(record.initialDeliveryDate ?? "", "CellData")}
+    ${excelCell(record.correctionDeliveryDate ?? "", "CellData")}
     ${excelCell(`${progress.percent}%`, getStatusStyleId(progress.stage))}
     ${excelCell(progress.stage, getStatusStyleId(progress.stage))}
     ${CHECKLIST_FIELDS.map((field) => {
@@ -892,6 +900,8 @@ export default function Home() {
         body: JSON.stringify({
           id: nextRecord.id,
           deliveryStatus: nextRecord.deliveryStatus,
+          initialDeliveryDate: nextRecord.initialDeliveryDate,
+          correctionDeliveryDate: nextRecord.correctionDeliveryDate,
           checks: nextRecord.checks,
           fieldObservations: nextRecord.fieldObservations,
           fieldEvidence: nextRecord.fieldEvidence,
@@ -1087,6 +1097,28 @@ export default function Home() {
     });
   }
 
+  function changeInitialDeliveryDate(
+    record: ChecklistRecord,
+    initialDeliveryDate: string,
+  ) {
+    saveRecord({
+      ...record,
+      initialDeliveryDate,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  function changeCorrectionDeliveryDate(
+    record: ChecklistRecord,
+    correctionDeliveryDate: string,
+  ) {
+    saveRecord({
+      ...record,
+      correctionDeliveryDate,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
   function updateObservation(record: ChecklistRecord, value: string) {
     setRecords((current) =>
       current.map((item) =>
@@ -1261,6 +1293,8 @@ export default function Home() {
         fecha: selectedRecord.updatedAt
           ? new Date(selectedRecord.updatedAt).toISOString().split("T")[0]
           : new Date().toISOString().split("T")[0],
+        fechaEntregaInicial: selectedRecord.initialDeliveryDate || "",
+        fechaEntregaCorrecciones: selectedRecord.correctionDeliveryDate || "",
       };
 
       const blob = await generateOficioDocxBlob(projectInfo, stateObj);
@@ -1578,6 +1612,47 @@ export default function Home() {
                         </option>
                       ))}
                     </select>
+                  </div>
+                  <div className="delivery-select-box">
+                    <span>Fecha Entrega Inicial:</span>
+                    <input
+                      type="date"
+                      style={{
+                        padding: "4px 8px",
+                        borderRadius: "6px",
+                        border: "1px solid #cbd5e1",
+                        fontSize: "0.85rem",
+                        background: "#fff",
+                      }}
+                      value={selectedRecord.initialDeliveryDate || ""}
+                      onChange={(event) =>
+                        changeInitialDeliveryDate(
+                          selectedRecord,
+                          event.target.value,
+                        )
+                      }
+                    />
+                  </div>
+                  <div className="delivery-select-box">
+                    <span>Fecha Entrega con Correcciones:</span>
+                    <input
+                      type="date"
+                      style={{
+                        padding: "4px 8px",
+                        borderRadius: "6px",
+                        border: "1px solid #cbd5e1",
+                        fontSize: "0.85rem",
+                        background: "#fff",
+                      }}
+                      value={selectedRecord.correctionDeliveryDate || ""}
+                      placeholder="Vacío"
+                      onChange={(event) =>
+                        changeCorrectionDeliveryDate(
+                          selectedRecord,
+                          event.target.value,
+                        )
+                      }
+                    />
                   </div>
                 </div>
                 <div className="detail-score-box">
