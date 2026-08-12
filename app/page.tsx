@@ -508,25 +508,26 @@ function buildExcelReport(records: ChecklistRecord[]) {
               ? "NO APROBADO"
               : "PENDIENTE";
 
-      const dateStr = record.updatedAt
-        ? new Date(record.updatedAt).toLocaleDateString("es-CO")
-        : record.deliveryStatus === "Entrego"
-          ? "Entregado"
-          : "Sin registrar";
-
+      const initialDateStr = record.initialDeliveryDate
+        ? new Date(record.initialDeliveryDate + "T00:00:00").toLocaleDateString("es-CO")
+        : "";
+      const correctionDateStr = record.correctionDeliveryDate
+        ? new Date(record.correctionDeliveryDate + "T00:00:00").toLocaleDateString("es-CO")
+        : "";
+      const pesoStr = record.deliverySizeGb ? `${record.deliverySizeGb} GB` : "";
       const obsStr = formatRecordObservations(record);
 
       return `<Row>
     ${excelCell(record.oferente, "CellData")}
     ${excelCell(record.municipio, "CellData")}
     ${excelCell("General", "CellData")}
-    ${excelCell(dateStr, "CellData")}
+    ${excelCell(initialDateStr || record.initialDeliveryDate || "", "CellData")}
     ${excelCell(structStatus, getStatusStyleId(structStatus))}
-    ${excelCell(folderStatus, getStatusStyleId(folderStatus))}
+    ${excelCell(pesoStr, "CellData")}
     ${excelCell(cartoStatus, getStatusStyleId(cartoStatus))}
     ${excelCell(docStatus, getStatusStyleId(docStatus))}
     ${excelCell(progress.stage === "Completo" ? "N/A" : "Pendiente", "CellData")}
-    ${excelCell(record.updatedAt ? new Date(record.updatedAt).toLocaleDateString("es-CO") : "N/A", "CellData")}
+    ${excelCell(correctionDateStr || record.correctionDeliveryDate || "", "CellData")}
     ${excelCell(obsStr, "CellData")}
     ${excelCell(finalStatus, getStatusStyleId(finalStatus))}
   </Row>`;
@@ -553,14 +554,20 @@ function buildExcelReport(records: ChecklistRecord[]) {
     .map((record) => {
       const progress = calculateRecordProgress(record);
       const evidenceCount = Object.keys(record.fieldEvidence ?? {}).length;
+      const initialDateStr = record.initialDeliveryDate
+        ? new Date(record.initialDeliveryDate + "T00:00:00").toLocaleDateString("es-CO")
+        : "";
+      const correctionDateStr = record.correctionDeliveryDate
+        ? new Date(record.correctionDeliveryDate + "T00:00:00").toLocaleDateString("es-CO")
+        : "";
       return `<Row>
     ${excelCell(record.id, "CellData")}
     ${excelCell(record.oferente, "CellData")}
     ${excelCell(record.municipio, "CellData")}
     ${excelCell(record.deliveryStatus, "CellData")}
     ${excelCell(record.deliverySizeGb ? `${record.deliverySizeGb} GB` : "", "CellData")}
-    ${excelCell(record.initialDeliveryDate ?? "", "CellData")}
-    ${excelCell(record.correctionDeliveryDate ?? "", "CellData")}
+    ${excelCell(initialDateStr || record.initialDeliveryDate || "", "CellData")}
+    ${excelCell(correctionDateStr || record.correctionDeliveryDate || "", "CellData")}
     ${excelCell(`${progress.percent}%`, getStatusStyleId(progress.stage))}
     ${excelCell(progress.stage, getStatusStyleId(progress.stage))}
     ${CHECKLIST_FIELDS.map((field) => {
