@@ -39,6 +39,7 @@ export type ChecklistRecord = {
   deliveryStatus: DeliveryStatus;
   initialDeliveryDate?: string;
   correctionDeliveryDate?: string;
+  deliverySizeGb?: string;
   checks: Record<string, ChecklistStatus>;
   fieldObservations?: Record<string, string>;
   fieldEvidence?: Record<string, string>;

@@ -309,6 +309,7 @@ function buildCsv(records: ChecklistRecord[]) {
     "Oferente",
     "Municipio",
     "Entrega de informacion",
+    "Tamaño (GB)",
     "Fecha de Entrega Inicial",
     "Fecha de Entrega con Correcciones",
     ...CHECKLIST_FIELDS.map(fieldReportLabel),
@@ -325,6 +326,7 @@ function buildCsv(records: ChecklistRecord[]) {
       record.oferente,
       record.municipio,
       record.deliveryStatus,
+      record.deliverySizeGb ? `${record.deliverySizeGb} GB` : "",
       record.initialDeliveryDate ?? "",
       record.correctionDeliveryDate ?? "",
       ...CHECKLIST_FIELDS.map(
@@ -536,6 +538,7 @@ function buildExcelReport(records: ChecklistRecord[]) {
     "Oferente",
     "Municipio",
     "Entrega de informacion",
+    "Tamaño (GB)",
     "Fecha de Entrega Inicial",
     "Fecha de Entrega con Correcciones",
     "Porcentaje cumplimiento",
@@ -555,6 +558,7 @@ function buildExcelReport(records: ChecklistRecord[]) {
     ${excelCell(record.oferente, "CellData")}
     ${excelCell(record.municipio, "CellData")}
     ${excelCell(record.deliveryStatus, "CellData")}
+    ${excelCell(record.deliverySizeGb ? `${record.deliverySizeGb} GB` : "", "CellData")}
     ${excelCell(record.initialDeliveryDate ?? "", "CellData")}
     ${excelCell(record.correctionDeliveryDate ?? "", "CellData")}
     ${excelCell(`${progress.percent}%`, getStatusStyleId(progress.stage))}
@@ -902,6 +906,7 @@ export default function Home() {
           deliveryStatus: nextRecord.deliveryStatus,
           initialDeliveryDate: nextRecord.initialDeliveryDate,
           correctionDeliveryDate: nextRecord.correctionDeliveryDate,
+          deliverySizeGb: nextRecord.deliverySizeGb,
           checks: nextRecord.checks,
           fieldObservations: nextRecord.fieldObservations,
           fieldEvidence: nextRecord.fieldEvidence,
@@ -1115,6 +1120,17 @@ export default function Home() {
     saveRecord({
       ...record,
       correctionDeliveryDate,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  function changeDeliverySizeGb(
+    record: ChecklistRecord,
+    deliverySizeGb: string,
+  ) {
+    saveRecord({
+      ...record,
+      deliverySizeGb,
       updatedAt: new Date().toISOString(),
     });
   }
@@ -1612,6 +1628,30 @@ export default function Home() {
                         </option>
                       ))}
                     </select>
+                  </div>
+                  <div className="delivery-select-box">
+                    <span>Tamaño (GB):</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Ej. 15.5"
+                      style={{
+                        padding: "4px 8px",
+                        borderRadius: "6px",
+                        border: "1px solid #cbd5e1",
+                        fontSize: "0.85rem",
+                        background: "#fff",
+                        width: "100px",
+                      }}
+                      value={selectedRecord.deliverySizeGb || ""}
+                      onChange={(event) =>
+                        changeDeliverySizeGb(
+                          selectedRecord,
+                          event.target.value,
+                        )
+                      }
+                    />
                   </div>
                   <div className="delivery-select-box">
                     <span>Fecha Entrega Inicial:</span>

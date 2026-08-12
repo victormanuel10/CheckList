@@ -26,6 +26,7 @@ type DbRecord = {
   delivery_status?: DeliveryStatus | string | null;
   initial_delivery_date?: string | null;
   correction_delivery_date?: string | null;
+  delivery_size_gb?: string | null;
   checks: string | Record<string, ChecklistStatus>;
   field_observations?: string | Record<string, string> | null;
   field_evidence?: string | Record<string, string> | null;
@@ -58,6 +59,7 @@ async function ensureSchema() {
       delivery_status text DEFAULT 'Sin registrar' NOT NULL,
       initial_delivery_date text DEFAULT '' NOT NULL,
       correction_delivery_date text DEFAULT '' NOT NULL,
+      delivery_size_gb text DEFAULT '' NOT NULL,
       checks text NOT NULL,
       observations text DEFAULT '' NOT NULL,
       updated_at text,
@@ -78,6 +80,11 @@ async function ensureSchema() {
   try {
     await db.prepare(
       "ALTER TABLE checklist_records ADD COLUMN correction_delivery_date text DEFAULT '' NOT NULL",
+    ).run();
+  } catch {}
+  try {
+    await db.prepare(
+      "ALTER TABLE checklist_records ADD COLUMN delivery_size_gb text DEFAULT '' NOT NULL",
     ).run();
   } catch {}
   try {
@@ -138,6 +145,7 @@ function rowToRecord(row: DbRecord): ChecklistRecord {
       : "Sin registrar",
     initialDeliveryDate: row.initial_delivery_date ?? "",
     correctionDeliveryDate: row.correction_delivery_date ?? "",
+    deliverySizeGb: row.delivery_size_gb ?? "",
     checks: normalizeChecks(row.checks),
     fieldObservations: parseJsonRecord<string>(row.field_observations),
     fieldEvidence: parseJsonRecord<string>(row.field_evidence),
@@ -149,8 +157,8 @@ function rowToRecord(row: DbRecord): ChecklistRecord {
 function insertStatement(record: ChecklistRecord) {
   return getDbBinding().prepare(
     `INSERT INTO checklist_records
-      (id, oferente, municipio, delivery_status, initial_delivery_date, correction_delivery_date, checks, field_observations, field_evidence, observations, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (id, oferente, municipio, delivery_status, initial_delivery_date, correction_delivery_date, delivery_size_gb, checks, field_observations, field_evidence, observations, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).bind(
     record.id,
     record.oferente,
@@ -158,6 +166,7 @@ function insertStatement(record: ChecklistRecord) {
     record.deliveryStatus,
     record.initialDeliveryDate ?? "",
     record.correctionDeliveryDate ?? "",
+    record.deliverySizeGb ?? "",
     JSON.stringify(record.checks),
     JSON.stringify(record.fieldObservations ?? {}),
     JSON.stringify(record.fieldEvidence ?? {}),
@@ -176,7 +185,7 @@ async function insertMany(records: ChecklistRecord[]) {
 async function listRecords() {
   await ensureSchema();
   const result = await getDbBinding().prepare(
-    `SELECT id, oferente, municipio, delivery_status, initial_delivery_date, correction_delivery_date, checks, field_observations, field_evidence, observations, updated_at
+    `SELECT id, oferente, municipio, delivery_status, initial_delivery_date, correction_delivery_date, delivery_size_gb, checks, field_observations, field_evidence, observations, updated_at
       FROM checklist_records
       ORDER BY oferente, municipio`,
   ).all<DbRecord>();
@@ -227,7 +236,7 @@ export async function PATCH(request: Request) {
 
     await seedIfNeeded();
     const current = await getDbBinding().prepare(
-      `SELECT id, oferente, municipio, delivery_status, initial_delivery_date, correction_delivery_date, checks, field_observations, field_evidence, observations, updated_at
+      `SELECT id, oferente, municipio, delivery_status, initial_delivery_date, correction_delivery_date, delivery_size_gb, checks, field_observations, field_evidence, observations, updated_at
         FROM checklist_records
         WHERE id = ?
         LIMIT 1`,
@@ -275,6 +284,9 @@ export async function PATCH(request: Request) {
       correctionDeliveryDate: typeof payload.correctionDeliveryDate === "string"
         ? payload.correctionDeliveryDate
         : currentRecord.correctionDeliveryDate ?? "",
+      deliverySizeGb: typeof payload.deliverySizeGb === "string"
+        ? payload.deliverySizeGb
+        : currentRecord.deliverySizeGb ?? "",
       checks,
       fieldObservations,
       fieldEvidence,
@@ -287,13 +299,14 @@ export async function PATCH(request: Request) {
 
     await getDbBinding().prepare(
       `UPDATE checklist_records
-        SET delivery_status = ?, initial_delivery_date = ?, correction_delivery_date = ?, checks = ?, field_observations = ?, field_evidence = ?, observations = ?, updated_at = ?
+        SET delivery_status = ?, initial_delivery_date = ?, correction_delivery_date = ?, delivery_size_gb = ?, checks = ?, field_observations = ?, field_evidence = ?, observations = ?, updated_at = ?
         WHERE id = ?`,
     )
       .bind(
         record.deliveryStatus,
         record.initialDeliveryDate,
         record.correctionDeliveryDate,
+        record.deliverySizeGb,
         JSON.stringify(record.checks),
         JSON.stringify(record.fieldObservations ?? {}),
         JSON.stringify(record.fieldEvidence ?? {}),
