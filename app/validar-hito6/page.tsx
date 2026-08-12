@@ -129,6 +129,31 @@ export default function ValidarHito6Page() {
     setShowConceptModal(true);
   };
 
+  async function handleDownloadDocx() {
+    setSaveStatus("Generando Word...");
+    try {
+      const res = await fetch("/api/validar-hito6/export-docx", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectInfo, checklistState: state }),
+      });
+      if (!res.ok) {
+        throw new Error("Error en la respuesta del servidor");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `OFCANT-CATS_${(projectInfo.municipio || "PROYECTO").toUpperCase()}_CONCEPTO_HITO_06.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setSaveStatus("¡Word descargado!");
+      setTimeout(() => setSaveStatus(null), 3000);
+    } catch {
+      setSaveStatus("Error al generar Word");
+    }
+  }
+
   const handleDownloadTxt = () => {
     const blob = new Blob([conceptoText], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -225,6 +250,9 @@ export default function ValidarHito6Page() {
           {saveStatus && <span className="save-message">{saveStatus}</span>}
           <button onClick={handleSave} className="btn-icon btn-primary">
             💾 Guardar Estado
+          </button>
+          <button onClick={handleDownloadDocx} className="btn-icon btn-primary">
+            📄 Oficio Word (.docx)
           </button>
           <button onClick={handleOpenConcept} className="btn-icon">
             📝 Generar Concepto
