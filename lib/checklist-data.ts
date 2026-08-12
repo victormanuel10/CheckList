@@ -590,6 +590,9 @@ export function createInitialRecords(): ChecklistRecord[] {
     oferente,
     municipio,
     deliveryStatus: "Sin registrar",
+    initialDeliveryDate: "",
+    correctionDeliveryDate: "",
+    deliverySizeGb: "",
     checks: createDefaultChecks(),
     fieldObservations: {},
     fieldEvidence: {},
@@ -737,6 +740,24 @@ export function mergeImportedRecords(input: unknown): ChecklistRecord[] {
         : isDeliveryStatus(source.delivery_status)
           ? source.delivery_status
           : "Sin registrar",
+      initialDeliveryDate:
+        typeof source.initialDeliveryDate === "string"
+          ? source.initialDeliveryDate
+          : typeof source.initial_delivery_date === "string"
+            ? source.initial_delivery_date
+            : base.initialDeliveryDate ?? "",
+      correctionDeliveryDate:
+        typeof source.correctionDeliveryDate === "string"
+          ? source.correctionDeliveryDate
+          : typeof source.correction_delivery_date === "string"
+            ? source.correction_delivery_date
+            : base.correctionDeliveryDate ?? "",
+      deliverySizeGb:
+        typeof source.deliverySizeGb === "string"
+          ? source.deliverySizeGb
+          : typeof source.delivery_size_gb === "string"
+            ? source.delivery_size_gb
+            : base.deliverySizeGb ?? "",
       checks,
       fieldObservations,
       fieldEvidence,
