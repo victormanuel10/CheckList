@@ -7,6 +7,7 @@ import {
   VALIDATION_SECTIONS,
   calculateValidationStats,
   generateValidationConceptText,
+  generateValidationExcelXml,
   type ChecklistItemState,
   type ProjectInfo,
 } from "../../lib/validar-hito6-data";
@@ -158,6 +159,17 @@ export default function ValidarHito6Page() {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportExcel = () => {
+    const xmlContent = generateValidationExcelXml(projectInfo, state);
+    const blob = new Blob([xmlContent], { type: "application/vnd.ms-excel;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `validacion_anexos_hito6_${(projectInfo.municipio || "proyecto").toLowerCase().replace(/[^a-z0-9]/g, "_")}.xls`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleExportJson = () => {
     const dataStr = JSON.stringify({ projectInfo, checklistState: state }, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
@@ -244,6 +256,9 @@ export default function ValidarHito6Page() {
           {saveStatus && <span className="save-message">{saveStatus}</span>}
           <button onClick={handleSave} className="btn-icon btn-primary">
             💾 Guardar Estado
+          </button>
+          <button onClick={handleExportExcel} className="btn-icon btn-primary">
+            📊 Reporte Excel
           </button>
           <button onClick={handleOpenConcept} className="btn-icon">
             📝 Generar Concepto

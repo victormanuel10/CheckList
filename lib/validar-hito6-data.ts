@@ -313,3 +313,127 @@ export function generateValidationConceptText(
 
   return text;
 }
+
+function xmlEscape(value: unknown) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function excelCell(value: unknown, styleId = "") {
+  const text = xmlEscape(value);
+  const style = styleId ? ` ss:StyleID="${styleId}"` : "";
+  return `<Cell${style}><Data ss:Type="String">${text}</Data></Cell>`;
+}
+
+function excelRow(values: unknown[], styleId = "") {
+  return `<Row>${values.map((v) => excelCell(v, styleId)).join("")}</Row>`;
+}
+
+export function generateValidationExcelXml(
+  projectInfo: ProjectInfo,
+  state: Record<string, ChecklistItemState>
+): string {
+  const detailRowsXml: string[] = [];
+
+  VALIDATION_SECTIONS.forEach((sec) => {
+    sec.items.forEach((itemObj) => {
+      const key = `${sec.title}::${itemObj.item}`;
+      const isDone = !!state[key]?.checked;
+      const statusText = isDone ? "Cumple" : "No cumple";
+      const statusStyle = isDone ? "Cumple" : "NoCumple";
+
+      // Item Principal
+      detailRowsXml.push(
+        `<Row>
+          ${excelCell(sec.title, "SectionCell")}
+          ${excelCell("Según Contrato Hito 6", "SubSectionCell")}
+          ${excelCell(itemObj.item, "ItemCell")}
+          ${excelCell("", "CellData")}
+          ${excelCell(statusText, statusStyle)}
+        </Row>`
+      );
+
+      // Subitems si existen
+      if (itemObj.subitems && itemObj.subitems.length > 0) {
+        itemObj.subitems.forEach((sub) => {
+          const subKey = `${key}::${sub}`;
+          const subDone = !!(state[key]?.subitems?.[subKey] || state[subKey]?.checked);
+          const subStatusText = subDone ? "Cumple" : "No cumple";
+          const subStatusStyle = subDone ? "Cumple" : "NoCumple";
+
+          detailRowsXml.push(
+            `<Row>
+              ${excelCell("", "SectionCell")}
+              ${excelCell("", "SubSectionCell")}
+              ${excelCell("", "ItemCell")}
+              ${excelCell(sub, "SubItemCell")}
+              ${excelCell(subStatusText, subStatusStyle)}
+            </Row>`
+          );
+        });
+      }
+    });
+  });
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Styles>
+  <Style ss:ID="Header">
+   <Font ss:Bold="1" ss:Size="12" ss:Color="#FFFFFF"/>
+   <Interior ss:Color="#366092" ss:Pattern="Solid"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+  </Style>
+  <Style ss:ID="SectionCell">
+   <Font ss:Bold="1" ss:Size="11"/>
+   <Interior ss:Color="#D9E1F2" ss:Pattern="Solid"/>
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+  </Style>
+  <Style ss:ID="SubSectionCell">
+   <Font ss:Bold="1" ss:Size="10"/>
+   <Interior ss:Color="#E7E6E6" ss:Pattern="Solid"/>
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+  </Style>
+  <Style ss:ID="ItemCell">
+   <Font ss:Size="10"/>
+   <Interior ss:Color="#F2F2F2" ss:Pattern="Solid"/>
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+  </Style>
+  <Style ss:ID="SubItemCell">
+   <Font ss:Italic="1" ss:Size="9"/>
+   <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+  </Style>
+  <Style ss:ID="CellData">
+   <Font ss:Size="10"/>
+   <Alignment ss:Vertical="Top"/>
+  </Style>
+  <Style ss:ID="Cumple">
+   <Font ss:Bold="1" ss:Color="#276A3C"/>
+   <Interior ss:Color="#E2EFDA" ss:Pattern="Solid"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Top"/>
+  </Style>
+  <Style ss:ID="NoCumple">
+   <Font ss:Bold="1" ss:Color="#A94442"/>
+   <Interior ss:Color="#FCE4D6" ss:Pattern="Solid"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Top"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Checklist Hito 6">
+  <Table>
+   <Column ss:Width="250"/>
+   <Column ss:Width="250"/>
+   <Column ss:Width="300"/>
+   <Column ss:Width="250"/>
+   <Column ss:Width="100"/>
+   ${excelRow(["Sección", "Subsección", "Item", "Subitem", "Cumplido"], "Header")}
+   ${detailRowsXml.join("\n")}
+  </Table>
+ </Worksheet>
+</Workbook>`;
+}
