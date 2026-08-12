@@ -17,10 +17,10 @@ import {
 import type { ProjectInfo, ChecklistItemState } from "./validar-hito6-data";
 import { calculateValidationStats, VALIDATION_SECTIONS } from "./validar-hito6-data";
 
-export async function generateOficioDocxBuffer(
+export function buildOficioDocument(
   projectInfo: ProjectInfo,
   state: Record<string, ChecklistItemState>
-): Promise<Buffer> {
+): Document {
   const stats = calculateValidationStats(state);
   const now = new Date();
   const dateFormatted = projectInfo.fecha
@@ -389,5 +389,21 @@ export async function generateOficioDocxBuffer(
     ],
   });
 
+  return doc;
+}
+
+export async function generateOficioDocxBuffer(
+  projectInfo: ProjectInfo,
+  state: Record<string, ChecklistItemState>
+): Promise<Buffer> {
+  const doc = buildOficioDocument(projectInfo, state);
   return await Packer.toBuffer(doc);
+}
+
+export async function generateOficioDocxBlob(
+  projectInfo: ProjectInfo,
+  state: Record<string, ChecklistItemState>
+): Promise<Blob> {
+  const doc = buildOficioDocument(projectInfo, state);
+  return await Packer.toBlob(doc);
 }

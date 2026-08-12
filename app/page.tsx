@@ -3,6 +3,7 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
+import { generateOficioDocxBlob } from "../lib/docx-generator";
 import {
   CHECKLIST_FIELDS,
   DELIVERY_VALUES,
@@ -317,27 +318,16 @@ async function exportDocx() {
       };
     });
 
-    const res = await fetch("/api/validar-hito6/export-docx", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        projectInfo: {
-          municipio: selectedRecord.municipio,
-          operador: selectedRecord.oferente,
-          contrato: "151 DE 2024",
-          fecha: selectedRecord.updatedAt
-            ? new Date(selectedRecord.updatedAt).toISOString().split("T")[0]
-            : new Date().toISOString().split("T")[0],
-        },
-        checklistState: stateObj,
-      }),
-    });
+    const projectInfo = {
+      municipio: selectedRecord.municipio,
+      operador: selectedRecord.oferente,
+      contrato: "151 DE 2024",
+      fecha: selectedRecord.updatedAt
+        ? new Date(selectedRecord.updatedAt).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0],
+    };
 
-    if (!res.ok) {
-      throw new Error("No se pudo generar el documento.");
-    }
-
-    const blob = await res.blob();
+    const blob = await generateOficioDocxBlob(projectInfo, stateObj);
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
@@ -346,7 +336,8 @@ async function exportDocx() {
     URL.revokeObjectURL(url);
     setMessage("¡Word descargado!");
     setTimeout(() => setMessage(""), 3000);
-  } catch {
+  } catch (err) {
+    console.error("Error al generar Word:", err);
     setMessage("Error al generar Word");
   }
 }

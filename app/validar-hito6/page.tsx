@@ -10,6 +10,7 @@ import {
   type ChecklistItemState,
   type ProjectInfo,
 } from "../../lib/validar-hito6-data";
+import { generateOficioDocxBlob } from "../../lib/docx-generator";
 
 export default function ValidarHito6Page() {
   const router = useRouter();
@@ -132,15 +133,7 @@ export default function ValidarHito6Page() {
   async function handleDownloadDocx() {
     setSaveStatus("Generando Word...");
     try {
-      const res = await fetch("/api/validar-hito6/export-docx", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectInfo, checklistState: state }),
-      });
-      if (!res.ok) {
-        throw new Error("Error en la respuesta del servidor");
-      }
-      const blob = await res.blob();
+      const blob = await generateOficioDocxBlob(projectInfo, state);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -149,7 +142,8 @@ export default function ValidarHito6Page() {
       URL.revokeObjectURL(url);
       setSaveStatus("¡Word descargado!");
       setTimeout(() => setSaveStatus(null), 3000);
-    } catch {
+    } catch (err) {
+      console.error("Error al generar Word:", err);
       setSaveStatus("Error al generar Word");
     }
   }
