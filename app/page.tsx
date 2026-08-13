@@ -1,7 +1,6 @@
 "use client";
 
-import type { ChangeEvent, FormEvent } from "react";
-import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import React, { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { generateOficioDocxBlob } from "../lib/docx-generator";
 import {
