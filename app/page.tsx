@@ -982,7 +982,7 @@ function HomeContent() {
     });
   }
 
-  function compressImage(file: Blob | File, maxWidth = 1200, quality = 0.75): Promise<string> {
+  function compressImage(file: Blob | File, maxWidth = 900, quality = 0.65): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {

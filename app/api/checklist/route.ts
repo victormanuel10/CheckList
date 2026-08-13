@@ -227,7 +227,15 @@ export async function PATCH(request: Request) {
     if (!(await isAuthenticatedRequest(request))) {
       return unauthorizedResponse();
     }
-    const payload = (await request.json()) as Record<string, unknown>;
+    let payload: Record<string, unknown> = {};
+    try {
+      payload = (await request.json()) as Record<string, unknown>;
+    } catch {
+      return Response.json(
+        { error: "La información enviada excede el tamaño máximo permitido." },
+        { status: 400 },
+      );
+    }
     const id = typeof payload.id === "string" ? payload.id : "";
 
     if (!id) {
