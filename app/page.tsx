@@ -1022,24 +1022,43 @@ function HomeContent() {
     file: Blob | File,
   ) {
     if (!file || !file.type.startsWith("image/")) return;
-    setMessage("Procesando imagen...");
+    setMessage("Subiendo foto al servidor...");
     try {
-      const dataUrl = await compressImage(file);
+      const dataUrl = await compressImage(file, 1200, 0.80);
       if (dataUrl) {
+        const uploadRes = await fetch("/api/upload-evidence", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recordId: record.id,
+            fieldId,
+            imageBase64: dataUrl,
+          }),
+        });
+
+        if (!uploadRes.ok) {
+          const errData = await uploadRes.json().catch(() => ({}));
+          throw new Error(errData.error || "No se pudo subir la foto");
+        }
+
+        const { url } = (await uploadRes.json()) as { url: string };
+        const finalUrl = url || dataUrl;
+
         const updatedEvidence = {
           ...(record.fieldEvidence ?? {}),
-          [fieldId]: dataUrl,
+          [fieldId]: finalUrl,
         };
         saveRecord({
           ...record,
           fieldEvidence: updatedEvidence,
           updatedAt: new Date().toISOString(),
         });
-        setMessage("Foto guardada correctamente");
+        setMessage("Foto guardada en el servidor");
         setTimeout(() => setMessage(""), 3000);
       }
-    } catch {
-      setMessage("Error al procesar imagen");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error al procesar imagen";
+      setMessage(msg);
     }
   }
 
