@@ -720,7 +720,7 @@ function buildExcelReport(records: ChecklistRecord[]) {
 </Workbook>`;
 }
 
-export default function Home() {
+function HomeContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [records, setRecords] = useState<ChecklistRecord[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
@@ -807,7 +807,11 @@ export default function Home() {
 
   useEffect(() => {
     if (authState === "authenticated" && records.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ records }));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ records }));
+      } catch (err) {
+        console.warn("No se pudo guardar la copia en LocalStorage por límite de cuota.", err);
+      }
     }
   }, [authState, records]);
 
@@ -2279,5 +2283,62 @@ export default function Home() {
         </div>
       ) : null}
     </main>
+  );
+}
+
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    console.error("ErrorBoundary capturó un fallo:", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: "40px", textAlign: "center", minHeight: "100vh", background: "#f8fafc" }}>
+          <h2 style={{ color: "#e11d48", fontSize: "1.5rem", fontWeight: 800 }}>
+            Inconveniente temporal al procesar datos
+          </h2>
+          <p style={{ color: "#64748b", margin: "12px 0" }}>
+            Se ha protegido la sesión para evitar pérdida de información.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            style={{
+              padding: "10px 20px",
+              background: "#0284c7",
+              color: "#fff",
+              border: "none",
+              borderRadius: "8px",
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            🔄 Recargar página
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function SafeHome() {
+  return (
+    <ErrorBoundary>
+      <HomeContent />
+    </ErrorBoundary>
   );
 }
