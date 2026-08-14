@@ -8,9 +8,16 @@ export async function POST(request: Request) {
       return unauthorizedResponse();
     }
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "evidence");
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+    const publicDir = path.join(process.cwd(), "public", "uploads", "evidence");
+    const distDir = path.join(process.cwd(), "dist", "client", "uploads", "evidence");
+
+    if (!fs.existsSync(publicDir)) {
+      fs.mkdirSync(publicDir, { recursive: true });
+    }
+    if (!fs.existsSync(distDir)) {
+      try {
+        fs.mkdirSync(distDir, { recursive: true });
+      } catch {}
     }
 
     const contentType = request.headers.get("content-type") || "";
@@ -31,9 +38,11 @@ export async function POST(request: Request) {
       const safeRecordId = recordId.replace(/[^a-zA-Z0-9_-]/g, "");
       const safeFieldId = fieldId.replace(/[^a-zA-Z0-9_-]/g, "");
       const filename = `${safeRecordId}_${safeFieldId}_${Date.now()}.${cleanExt}`;
-      const filePath = path.join(uploadsDir, filename);
 
-      fs.writeFileSync(filePath, buffer);
+      fs.writeFileSync(path.join(publicDir, filename), buffer);
+      try {
+        fs.writeFileSync(path.join(distDir, filename), buffer);
+      } catch {}
 
       const url = `/uploads/evidence/${filename}`;
       return Response.json({ url, success: true });
@@ -58,9 +67,10 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(base64Data, "base64");
 
     const filename = `${recordId}_${fieldId}_${Date.now()}.${ext}`;
-    const filePath = path.join(uploadsDir, filename);
-
-    fs.writeFileSync(filePath, buffer);
+    fs.writeFileSync(path.join(publicDir, filename), buffer);
+    try {
+      fs.writeFileSync(path.join(distDir, filename), buffer);
+    } catch {}
 
     const url = `/uploads/evidence/${filename}`;
     return Response.json({ url, success: true });
