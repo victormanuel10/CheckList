@@ -2,7 +2,7 @@
 
 import React, { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
-import { generateOficioDocxBlob } from "../lib/docx-generator";
+import { generateOficioDocxBlob, generateCartographicConceptDocxBlob } from "../lib/docx-generator";
 import {
   CHECKLIST_FIELDS,
   DELIVERY_VALUES,
@@ -1357,6 +1357,37 @@ function HomeContent() {
     }
   }
 
+  async function handleExportCartograficoWord() {
+    if (!selectedRecord) {
+      alert("Selecciona un municipio para exportar.");
+      return;
+    }
+    setMessage("Generando Concepto Cartográfico Word con fotos...");
+    try {
+      const projectInfo = {
+        municipio: selectedRecord.municipio,
+        operador: selectedRecord.oferente,
+        contrato: "Contrato 179-2024",
+        fecha: selectedRecord.updatedAt
+          ? new Date(selectedRecord.updatedAt).toISOString().split("T")[0]
+          : new Date().toISOString().split("T")[0],
+      };
+
+      const blob = await generateCartographicConceptDocxBlob(selectedRecord, projectInfo);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `REVISIÓN_COMPONENTE_CARTOGRÁFICO_CONCEPTO_HITO_06_${selectedRecord.municipio.toUpperCase().replace(/[^A-Z0-9]/g, "_")}.docx`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setMessage("¡Concepto Cartográfico descargado!");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      console.error("Error al generar Concepto Cartográfico Word:", err);
+      setMessage("Error al generar Concepto Cartográfico");
+    }
+  }
+
   if (authState !== "authenticated") {
     return (
       <main className="login-shell">
@@ -1431,6 +1462,9 @@ function HomeContent() {
             {storageMode === "cloud" ? "Base del sitio" : "Modo local"}
           </span>
           {message ? <span className="save-message">{message}</span> : null}
+          <button type="button" className="btn-icon btn-primary" onClick={handleExportCartograficoWord} title="Generar informe de Revisión Componente Cartográfico Hito 06 con imágenes de evidencias adjuntas">
+            🗺️ Concepto Cartográfico (.docx)
+          </button>
           <button type="button" className="btn-icon btn-primary" onClick={exportDocx}>
             📄 Oficio Word (.docx)
           </button>

@@ -198,6 +198,32 @@ export default function ValidarHito6Page() {
     reader.readAsText(file);
   };
 
+  const handleExportCartograficoWord = async () => {
+    try {
+      setSaveStatus("Generando Concepto Cartográfico Word...");
+      const res = await fetch("/api/validar-hito6/export-cartografico", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectInfo, checklistState: state }),
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `REVISIÓN_COMPONENTE_CARTOGRÁFICO_CONCEPTO_HITO_06_${(projectInfo.municipio || "PROYECTO").toUpperCase().replace(/[^A-Z0-9]/g, "_")}.docx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        setSaveStatus("¡Concepto Cartográfico descargado!");
+        setTimeout(() => setSaveStatus(null), 3000);
+      } else {
+        setSaveStatus("Error al exportar Word");
+      }
+    } catch {
+      setSaveStatus("Error de red");
+    }
+  };
+
   const handleReset = () => {
     if (confirm("¿Estás seguro de que deseas restablecer todos los ítems de validación?")) {
       setState({});
@@ -256,6 +282,9 @@ export default function ValidarHito6Page() {
           {saveStatus && <span className="save-message">{saveStatus}</span>}
           <button onClick={handleSave} className="btn-icon btn-primary">
             💾 Guardar Estado
+          </button>
+          <button onClick={handleExportCartograficoWord} className="btn-icon btn-primary" title="Generar informe de Revisión Componente Cartográfico Hito 06 (.docx) con imágenes">
+            🗺️ Concepto Cartográfico (.docx)
           </button>
           <button onClick={handleExportExcel} className="btn-icon btn-primary">
             📊 Reporte Excel

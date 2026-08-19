@@ -12,10 +12,13 @@ import {
   Header,
   Footer,
   HeadingLevel,
+  ImageRun,
 } from "docx";
 
 import type { ProjectInfo, ChecklistItemState } from "./validar-hito6-data";
 import { calculateValidationStats, VALIDATION_SECTIONS } from "./validar-hito6-data";
+import type { ChecklistRecord } from "./checklist-data";
+import { CHECKLIST_FIELDS } from "./checklist-data";
 
 export function buildOficioDocument(
   projectInfo: ProjectInfo,
@@ -405,5 +408,379 @@ export async function generateOficioDocxBlob(
   state: Record<string, ChecklistItemState>
 ): Promise<Blob> {
   const doc = buildOficioDocument(projectInfo, state);
+  return await Packer.toBlob(doc);
+}
+
+export const CARTOGRAPHIC_REVIEW_ITEMS = [
+  { num: "01", label: "ZONA URBANA  BASE DE DATOS CATASTRAL", fieldIds: ["zona_urbana_gdb", "zona_urbana_alfanumerico", "general_estructura_general"] },
+  { num: "02", label: "ZONA URBANA  METADATOS", fieldIds: ["metadatos_urbana", "metadatos_general"] },
+  { num: "03", label: "ZONA RURAL  BASE DE DATOS CATASTRAL", fieldIds: ["zona_rural_gdb", "zona_rural_alfanumerico"] },
+  { num: "04", label: "ZONA RURAL  METADATOS", fieldIds: ["metadatos_rural"] },
+  { num: "05", label: "CARPETA PDF  ORTOFOTO 1:2.000", fieldIds: ["pdf_planos_ortofoto_2000"] },
+  { num: "06", label: "CARPETA PDF  ORTOFOTO 1:10.000", fieldIds: ["pdf_planos_ortofoto_10000"] },
+  { num: "07", label: "CARPETA PDF  PLANO_CONJUNTO_ZONA URBANA 1:2000", fieldIds: ["pdf_planos_prediales_2000", "pdf_planos_manzaneros"] },
+  { num: "08", label: "CARPETA PDF  PLANO_CONJUNTO_ZONA URBANA 1:2000 - ZONAS HOMOGÉNEAS FÍSICAS", fieldIds: ["pdf_planos_zhf_2000"] },
+  { num: "09", label: "CARPETA PDF  PLANO_CONJUNTO_ZONA URBANA 1:2000 - ZONAS HOMOGÉNEAS ECONÓMICAS", fieldIds: ["pdf_planos_zhe_2000"] },
+  { num: "10", label: "CARPETA PDF  PLANO_CONJUNTO_ZONA RURAL 1:10000", fieldIds: ["pdf_planos_prediales_10000"] },
+  { num: "11", label: "CARPETA PDF  PLANO_CONJUNTO_ZONA RURAL 1:10000 - ZONAS HOMOGÉNEAS FÍSICAS", fieldIds: ["pdf_planos_zhf_10000"] },
+  { num: "12", label: "CARPETA PDF  PLANO_CONJUNTO_ZONA RURAL 1:10000 - ZONAS HOMOGÉNEAS ECONÓMICAS", fieldIds: ["pdf_planos_zhe_10000"] },
+  { num: "13", label: "CARPETA PDF  PLANO M_CABECERA 1:500", fieldIds: ["pdf_planos_cabecera_500", "pdf_planos_pdf"] },
+  { num: "14", label: "CARPETA PDF  PLANO M_CENTROSP_ 1:500", fieldIds: ["pdf_planos_centrosp_500"] },
+  { num: "15", label: "CARPETA MXD  ORTOFOTO 1:2.000 / ORTOFOTO 1:10.000", fieldIds: ["mxd_planos_ortofoto_2000", "mxd_planos_ortofoto_10000"] },
+  { num: "16", label: "CARPETA MXD  PLANO_CONJUNTO_ZONA URBANA 1:2000", fieldIds: ["mxd_planos_prediales_2000", "mxd_planos_manzaneros"] },
+  { num: "17", label: "CARPETA MXD  PLANO_CONJUNTO_ZONA URBANA 1:2000 - ZONAS HOMOGÉNEAS FÍSICAS", fieldIds: ["mxd_planos_zhf_2000"] },
+  { num: "18", label: "CARPETA MXD  PLANO_CONJUNTO_ZONA URBANA 1:2000 - ZONAS HOMOGÉNEAS ECONÓMICAS", fieldIds: ["mxd_planos_zhe_2000"] },
+  { num: "19", label: "CARPETA MXD  PLANO_CONJUNTO_ZONA RURAL 1:10000", fieldIds: ["mxd_planos_prediales_10000"] },
+  { num: "20", label: "CARPETA MXD  PLANO_CONJUNTO_ZONA RURAL 1:10000 - ZONAS HOMOGÉNEAS FÍSICAS", fieldIds: ["mxd_planos_zhf_10000"] },
+  { num: "21", label: "CARPETA MXD  PLANO_CONJUNTO_ZONA RURAL 1:10000 - ZONAS HOMOGÉNEAS ECONÓMICAS", fieldIds: ["mxd_planos_zhe_10000"] },
+  { num: "22", label: "CARPETA MXD  PLANO M_CABECERA 1:500", fieldIds: ["mxd_planos_cabecera_500", "mxd_planos_mxd", "mxd_estructura_interna"] },
+  { num: "23", label: "CARPETA MXD  PLANO M_CENTROSP_ 1:500", fieldIds: ["mxd_planos_centrosp_500"] },
+];
+
+async function resolveImageBytes(url: string): Promise<Buffer | Uint8Array | null> {
+  if (!url) return null;
+  try {
+    if (url.startsWith("data:image/")) {
+      const base64Data = url.split(",")[1];
+      if (!base64Data) return null;
+      if (typeof window === "undefined") {
+        return Buffer.from(base64Data, "base64");
+      } else {
+        const binary = atob(base64Data);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+      }
+    }
+
+    if (typeof window === "undefined") {
+      const fs = require("node:fs");
+      const path = require("node:path");
+      let localPath = url;
+      if (url.startsWith("/")) {
+        localPath = path.join(process.cwd(), "public", url);
+        if (!fs.existsSync(localPath)) {
+          localPath = path.join(process.cwd(), "dist", "client", url);
+        }
+        if (!fs.existsSync(localPath)) {
+          localPath = path.join(process.cwd(), url);
+        }
+      }
+      if (fs.existsSync(localPath)) {
+        return fs.readFileSync(localPath);
+      }
+    }
+
+    const res = await fetch(url);
+    if (res.ok) {
+      const arrayBuf = await res.arrayBuffer();
+      return new Uint8Array(arrayBuf);
+    }
+  } catch (err) {
+    console.warn("No se pudo cargar imagen para exportar a Word:", url, err);
+  }
+  return null;
+}
+
+export async function buildCartographicConceptDocument(
+  record: ChecklistRecord,
+  customProjectInfo?: ProjectInfo
+): Promise<Document> {
+  const now = new Date();
+  const dateFormatted = customProjectInfo?.fecha
+    ? new Date(customProjectInfo.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })
+    : now.toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" });
+
+  const municipioName = (record.municipio || customProjectInfo?.municipio || "BETANIA").toUpperCase();
+  const contratoNo = customProjectInfo?.contrato || "Contrato 179-2024";
+
+  const NAVY = "1F4E78";
+  const LIGHT_GRAY = "F2F2F2";
+
+  const tableHeaderCell = (text: string, widthPct: number) =>
+    new TableCell({
+      width: { size: widthPct, type: WidthType.PERCENTAGE },
+      shading: { fill: NAVY },
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [
+            new TextRun({ text, bold: true, color: "FFFFFF", size: 20, font: "Calibri" }),
+          ],
+        }),
+      ],
+    });
+
+  const tableDataCell = (text: string, widthPct: number, bold = false, align = AlignmentType.LEFT, fill = "FFFFFF") =>
+    new TableCell({
+      width: { size: widthPct, type: WidthType.PERCENTAGE },
+      shading: { fill },
+      children: [
+        new Paragraph({
+          alignment: align,
+          children: [
+            new TextRun({ text, bold, size: 19, font: "Calibri" }),
+          ],
+        }),
+      ],
+    });
+
+  const tableRows = [
+    new TableRow({
+      children: [
+        tableHeaderCell("N°", 8),
+        tableHeaderCell("ACTIVIDADES DE ANEXOS HITO 6", 52),
+        tableHeaderCell("ESTADO", 15),
+        tableHeaderCell("OBSERVACIONES", 25),
+      ],
+    }),
+  ];
+
+  CARTOGRAPHIC_REVIEW_ITEMS.forEach((item) => {
+    let statusText = "PENDIENTE";
+    let obsText = "";
+
+    for (const fId of item.fieldIds) {
+      const st = record.checks?.[fId];
+      if (st) {
+        if (st === "Cumple") statusText = "CUMPLE";
+        else if (st === "Cumple parcial") statusText = "PARCIAL";
+        else if (st === "No cumple") statusText = "NO CUMPLE";
+        else if (st === "No aplica") statusText = "N/A";
+        else statusText = st.toUpperCase();
+      }
+      const obs = record.fieldObservations?.[fId];
+      if (obs && obs.trim()) {
+        obsText = obs.trim();
+        break;
+      }
+    }
+
+    if (!obsText) {
+      if (statusText === "CUMPLE") obsText = "Verificado y aprobado según especificaciones técnicas.";
+      else if (statusText === "N/A") obsText = "No aplica para este municipio.";
+      else obsText = "Presenta observaciones que deben ser subsanadas.";
+    }
+
+    tableRows.push(
+      new TableRow({
+        children: [
+          tableDataCell(item.num, 8, false, AlignmentType.CENTER),
+          tableDataCell(item.label, 52, false, AlignmentType.LEFT),
+          tableDataCell(statusText, 15, true, AlignmentType.CENTER),
+          tableDataCell(obsText, 25, false, AlignmentType.LEFT),
+        ],
+      })
+    );
+  });
+
+  const evidenceElements: any[] = [];
+  const evidenceKeys = Object.keys(record.fieldEvidence ?? {});
+
+  if (evidenceKeys.length > 0) {
+    evidenceElements.push(
+      new Paragraph({ text: "", space: { after: 300 } }),
+      new Paragraph({
+        heading: HeadingLevel.HEADING_2,
+        children: [
+          new TextRun({
+            text: `EVIDENCIA FOTOGRÁFICA Y REGISTRO DE HALLAZGOS CARTOGRÁFICOS`,
+            bold: true,
+            size: 24,
+            color: NAVY,
+            font: "Calibri",
+          }),
+        ],
+      }),
+      new Paragraph({ text: "", space: { after: 150 } })
+    );
+
+    let photoCounter = 1;
+    for (const fieldId of evidenceKeys) {
+      const imgUrl = record.fieldEvidence?.[fieldId];
+      if (!imgUrl) continue;
+
+      const fieldDef = CHECKLIST_FIELDS.find((f) => f.id === fieldId);
+      const fieldLabel = fieldDef ? `${fieldDef.group} - ${fieldDef.label}` : fieldId;
+      const obsText = record.fieldObservations?.[fieldId] || "";
+
+      const imgBytes = await resolveImageBytes(imgUrl);
+      if (imgBytes) {
+        evidenceElements.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `Hallazgo Cartográfico N° ${photoCounter++}: ${fieldLabel}`,
+                bold: true,
+                size: 22,
+                font: "Calibri",
+                color: NAVY,
+              }),
+            ],
+          }),
+          new Paragraph({ text: "", space: { after: 100 } }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new ImageRun({
+                data: imgBytes as any,
+                transformation: {
+                  width: 480,
+                  height: 270,
+                },
+              }),
+            ],
+          }),
+          new Paragraph({ text: "", space: { after: 100 } }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Observaciones: ", bold: true, size: 20, font: "Calibri" }),
+              new TextRun({
+                text: obsText || "Evidencia fotográfica cargada para la verificación técnica del elemento.",
+                italic: true,
+                size: 20,
+                font: "Calibri",
+                color: "444444",
+              }),
+            ],
+          }),
+          new Paragraph({ text: "", space: { after: 300 } })
+        );
+      }
+    }
+  }
+
+  const hasNoCumple = Object.values(record.checks ?? {}).includes("No cumple");
+  const overallConcept = hasNoCumple ? "NO CUMPLE" : "CUMPLE";
+
+  const children: any[] = [
+    new Paragraph({
+      alignment: AlignmentType.RIGHT,
+      children: [
+        new TextRun({ text: `Medellín, ${dateFormatted}`, bold: true, size: 22, font: "Calibri" }),
+      ],
+    }),
+    new Paragraph({ text: "", space: { after: 200 } }),
+
+    new Paragraph({
+      children: [
+        new TextRun({ text: "Señor\n", bold: true, size: 22, font: "Calibri" }),
+        new TextRun({ text: "ANDRÉS EMILIO LONDOÑO SÁNCHEZ\n", bold: true, size: 22, font: "Calibri" }),
+        new TextRun({ text: "ASOCIACIÓN DE MUNICIPIOS DEL NORTE ANTIOQUEÑO\n", size: 20, font: "Calibri" }),
+        new TextRun({ text: "AMUNORTE\n", bold: true, size: 20, font: "Calibri" }),
+        new TextRun({ text: `${contratoNo}`, size: 20, font: "Calibri" }),
+      ],
+    }),
+    new Paragraph({ text: "", space: { after: 200 } }),
+
+    new Paragraph({
+      children: [
+        new TextRun({ text: "Asunto: ", bold: true, size: 22, font: "Calibri" }),
+        new TextRun({
+          text: `Concepto sobre la primera versión asociada al Hito 06 referente a la entrega de las memorias técnicas del proyecto con el 100% de los entregables aprobados correspondientes a la etapa 1, 2 y 3 del municipio `,
+          size: 22,
+          font: "Calibri",
+        }),
+        new TextRun({ text: municipioName, bold: true, size: 22, font: "Calibri" }),
+        new TextRun({ text: `, del componente de barrido predial.`, size: 22, font: "Calibri" }),
+      ],
+    }),
+    new Paragraph({ text: "", space: { after: 250 } }),
+
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `Respetuoso saludo,  La Interventoría Conestudios S.A.S., de conformidad con las funciones establecidas en el Contrato No. 151, suscrito el 6 de junio de 2024, con acta de inicio del 13 de junio de 2024, y con base en la información suministrada por el operador del componente de barrido predial, emite el presente concepto y las respectivas consideraciones frente a la entrega correspondiente al Hito 06, relacionado con las memorias técnicas del proyecto, las cuales deberán contener el 100 % de los entregables aprobados correspondientes a las etapas 1, 2 y 3, así como los informes finales. Es importante precisar que el presente concepto se emite de conformidad con las obligaciones y condiciones establecidas en el contrato suscrito con el operador, así como con los lineamientos técnicos impartidos por el Supervisor Valor + mediante correo electrónico del 16 de julio de 2026.`,
+          size: 21,
+          font: "Calibri",
+        }),
+      ],
+    }),
+    new Paragraph({ text: "", space: { after: 300 } }),
+
+    new Paragraph({
+      heading: HeadingLevel.HEADING_2,
+      children: [
+        new TextRun({
+          text: `REVISIÓN DE LOS ANEXOS ASOCIADOS AL COMPONENTE CARTOGRÁFICO DE LAS MEMORIAS TÉCNICAS DEL MUNICIPIO DE ${municipioName}`,
+          bold: true,
+          size: 24,
+          color: NAVY,
+          font: "Calibri",
+        }),
+      ],
+    }),
+    new Paragraph({ text: "", space: { after: 150 } }),
+
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: tableRows,
+    }),
+
+    ...evidenceElements,
+
+    new Paragraph({ text: "", space: { after: 300 } }),
+
+    new Paragraph({
+      children: [
+        new TextRun({ text: "CONCLUSIÓN: ", bold: true, size: 22, font: "Calibri", color: NAVY }),
+        new TextRun({ text: `Por lo anterior, se puede concluir que los productos entregados `, size: 22, font: "Calibri" }),
+        new TextRun({
+          text: `${overallConcept} `,
+          bold: true,
+          size: 22,
+          font: "Calibri",
+          color: overallConcept === "CUMPLE" ? "008000" : "D9534F",
+        }),
+        new TextRun({
+          text: `con las especificaciones técnicas. Presenta errores de fondo o faltantes que deben ser subsanados con la entrega de una nueva versión.`,
+          size: 22,
+          font: "Calibri",
+        }),
+      ],
+    }),
+    new Paragraph({ text: "", space: { after: 200 } }),
+
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `El presente concepto de interventoría se expide sin perjuicio de las observaciones que en algún momento pueda emitir la Supervisión Valor + y/o el Gestor Catastral a través de los diferentes espacios de revisión y/o retroalimentación.  Se solicita al operador realizar la entrega de los ajustes solicitados en un plazo máximo de cuatro (4) días hábiles.`,
+          size: 21,
+          font: "Calibri",
+        }),
+      ],
+    }),
+    new Paragraph({ text: "", space: { after: 400 } }),
+
+    new Paragraph({
+      children: [
+        new TextRun({ text: "Cordialmente,\n\n\n\n", size: 22, font: "Calibri" }),
+        new TextRun({ text: "BLANCA RUTH JARAMILLO SOTO\n", bold: true, size: 22, font: "Calibri" }),
+        new TextRun({ text: "Líder de reconocimiento predial Conestudios S.A.S.\n", size: 20, font: "Calibri" }),
+        new TextRun({ text: "Interventoría Contrato No. 151 de 2024", size: 19, font: "Calibri", color: "666666" }),
+      ],
+    }),
+  ];
+
+  return new Document({
+    sections: [{ properties: {}, children }],
+  });
+}
+
+export async function generateCartographicConceptDocxBuffer(
+  record: ChecklistRecord,
+  customProjectInfo?: ProjectInfo
+): Promise<Buffer> {
+  const doc = await buildCartographicConceptDocument(record, customProjectInfo);
+  return await Packer.toBuffer(doc);
+}
+
+export async function generateCartographicConceptDocxBlob(
+  record: ChecklistRecord,
+  customProjectInfo?: ProjectInfo
+): Promise<Blob> {
+  const doc = await buildCartographicConceptDocument(record, customProjectInfo);
   return await Packer.toBlob(doc);
 }
